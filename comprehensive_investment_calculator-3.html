@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Responsive investment and compound interest calculator with SIP step-up, inflation adjustment and scenario analysis.">
+<title>Investment & Compound Interest Calculator</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#152238;--muted:#667085;--line:#e3e8ef;--primary:#2563eb;--primary-soft:#eff6ff;--success:#087443;--shadow:0 8px 28px rgba(15,23,42,.06)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+.container{width:min(1180px,100%);margin:0 auto;padding:clamp(16px,3vw,32px)}
+header{margin-bottom:22px}h1{font-size:clamp(26px,4vw,42px);line-height:1.12;margin:0 0 8px;letter-spacing:-.03em}h2{font-size:clamp(19px,2vw,24px);margin:0 0 16px}p{margin:0;color:var(--muted)}
+.layout{display:grid;grid-template-columns:minmax(260px,360px) minmax(0,1fr);gap:20px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:clamp(16px,2.2vw,24px);box-shadow:var(--shadow);margin-bottom:20px}
+.field{margin:15px 0}.field label{display:flex;justify-content:space-between;gap:10px;font-size:14px;font-weight:700}.field output{color:var(--primary);font-variant-numeric:tabular-nums;white-space:nowrap}
+input[type=number],select{width:100%;min-width:0;padding:11px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:var(--text);font:inherit;font-size:16px;margin-top:7px}input[type=range]{width:100%;margin-top:10px;accent-color:var(--primary)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}button{border:0;border-radius:10px;padding:11px 14px;font:inherit;font-weight:750;cursor:pointer;background:var(--primary);color:#fff}button.secondary{background:#e8eefc;color:#1d4ed8}button.neutral{background:#e5e7eb;color:#1f2937}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #bfdbfe;outline-offset:2px}
+.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.metric{background:#f8fafc;border:1px solid var(--line);border-radius:13px;padding:14px;min-width:0}.metric .label{font-size:12px;color:var(--muted)}.metric .value{font-size:clamp(19px,2.8vw,29px);font-weight:850;line-height:1.2;margin-top:5px;overflow-wrap:anywhere}.metric .sub{font-size:12px;color:var(--muted);margin-top:5px}
+.notice{margin-top:15px;padding:12px 14px;border-left:4px solid var(--primary);border-radius:8px;background:var(--primary-soft);font-size:13px;color:#334155}
+.chart-wrap{overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff}canvas{display:block;width:100%;height:300px}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;max-height:520px}table{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap}th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right}th:first-child,td:first-child{text-align:left}th{position:sticky;top:0;background:#f8fafc;z-index:1}tr:last-child td{border-bottom:0}
+.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.muted{font-size:13px;color:var(--muted)}.footer{font-size:12px;color:var(--muted);padding:0 2px 10px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}.controls h2,.controls .full-width,.controls .actions{grid-column:1/-1}}
+@media(max-width:560px){.container{padding:14px}.card{border-radius:14px;padding:15px;margin-bottom:14px}.controls{display:block}.metrics{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.metric{padding:11px}.metric .value{font-size:21px}canvas{height:240px}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>Investment & Compound Interest Calculator</h1>
+<p>Plan long-term wealth using a lump sum, monthly SIP, annual step-up, inflation and tax assumptions.</p>
+</header>
+<div class="layout">
+<aside>
+<section class="card controls">
+<h2>Investment assumptions</h2>
+<div class="field"><label for="initial">Initial investment (₹)</label><input id="initial" type="number" min="0" step="1000" value="4500000"></div>
+<div class="field"><label for="sip">Monthly SIP (₹)</label><input id="sip" type="number" min="0" step="500" value="20000"></div>
+<div class="field"><label for="step">Annual SIP step-up <output id="stepOut">10%</output></label><input id="step" type="range" min="0" max="30" step="0.5" value="10"></div>
+<div class="field"><label for="rate">Expected annual return <output id="rateOut">10%</output></label><input id="rate" type="range" min="0" max="25" step="0.1" value="10"></div>
+<div class="field"><label for="years">Investment period <output id="yearsOut">30 years</output></label><input id="years" type="range" min="1" max="60" step="1" value="30"></div>
+<div class="field"><label for="inflation">Inflation <output id="inflationOut">5%</output></label><input id="inflation" type="range" min="0" max="12" step="0.1" value="5"></div>
+<div class="field"><label for="tax">Tax on gains at the end <output id="taxOut">0%</output></label><input id="tax" type="range" min="0" max="40" step="0.5" value="0"></div>
+<div class="notice full-width">The SIP increases once every year by the selected step-up percentage. Tax is a simplified end-of-period estimate, not a complete Indian capital-gains calculation.</div>
+<div class="actions full-width"><button onclick="calculate()">Calculate</button><button class="neutral" onclick="resetForm()">Reset</button></div>
+</section>
+</aside>
+<main>
+<section class="card">
+<h2>Results</h2>
+<div class="metrics">
+<div class="metric"><div class="label">Final portfolio value</div><div id="final" class="value">—</div><div class="sub">Before modeled tax</div></div>
+<div class="metric"><div class="label">Total invested</div><div id="invested" class="value">—</div><div class="sub">Lump sum + SIPs</div></div>
+<div class="metric"><div class="label">Gross gains</div><div id="gains" class="value">—</div><div class="sub">Before modeled tax</div></div>
+<div class="metric"><div class="label">Estimated tax</div><div id="taxValue" class="value">—</div><div class="sub">Simplified estimate</div></div>
+<div class="metric"><div class="label">After-tax value</div><div id="afterTax" class="value">—</div><div class="sub">Nominal value</div></div>
+<div class="metric"><div class="label">Real value today</div><div id="real" class="value">—</div><div class="sub">After inflation and modeled tax</div></div>
+</div>
+<div id="summary" class="notice"></div>
+</section>
+<section class="card">
+<div class="section-head"><h2>Growth chart</h2><span class="muted">Portfolio value by year</span></div>
+<div class="chart-wrap"><canvas id="chart" width="1000" height="300" aria-label="Portfolio growth chart"></canvas></div>
+</section>
+<section class="card">
+<div class="section-head"><h2>Scenario comparison</h2><span class="muted">Same investment plan, different returns</span></div>
+<div class="table-wrap"><table id="scenarios"><thead><tr><th>Return</th><th>Final value</th><th>After tax</th><th>Real value</th><th>Multiple</th></tr></thead><tbody></tbody></table></div>
+</section>
+<section class="card">
+<div class="section-head"><h2>Year-by-year projection</h2><button class="secondary" onclick="downloadCSV()">Download CSV</button></div>
+<div class="table-wrap"><table id="projection"><thead><tr><th>Year</th><th>Opening value</th><th>Contributions</th><th>Growth</th><th>Closing value</th><th>Real value</th></tr></thead><tbody></tbody></table></div>
+</section>
+</main>
+</div>
+<div class="footer">Educational calculator only. Market returns are uncertain. This tool does not provide financial, tax or investment advice.</div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>'₹'+Math.round(n||0).toLocaleString('en-IN');
+let rows=[];
+function values(){return {initial:+$('initial').value||0,sip:+$('sip').value||0,step:(+$('step').value||0)/100,rate:(+$('rate').value||0)/100,years:+$('years').value||1,inflation:(+$('inflation').value||0)/100,tax:(+$('tax').value||0)/100}}
+function updateLabels(){ $('stepOut').textContent=$('step').value+'%';$('rateOut').textContent=$('rate').value+'%';$('yearsOut').textContent=$('years').value+' years';$('inflationOut').textContent=$('inflation').value+'%';$('taxOut').textContent=$('tax').value+'%'; }
+['initial','sip','step','rate','years','inflation','tax'].forEach(id=>$(id).addEventListener('input',()=>{updateLabels();calculate()}));
+function simulate(rateOverride=null){
+ const v=values(),rate=rateOverride===null?v.rate:rateOverride,monthlyRate=Math.pow(1+rate,1/12)-1;
+ let balance=v.initial,invested=v.initial,opening=v.initial,yearContrib=0,yearGrowth=0,result=[];
+ for(let month=1;month<=v.years*12;month++){
+   const year=Math.ceil(month/12),sip=v.sip*Math.pow(1+v.step,year-1);
+   const before=balance;balance*=1+monthlyRate;const growth=balance-before;balance+=sip;invested+=sip;yearContrib+=sip;yearGrowth+=growth;
+   if(month%12===0){result.push({year,opening,contrib:yearContrib,growth:yearGrowth,closing:balance,real:balance/Math.pow(1+v.inflation,year)});opening=balance;yearContrib=0;yearGrowth=0;}
+ }
+ const gains=balance-invested,tax=Math.max(0,gains)*v.tax,afterTax=balance-tax,real=afterTax/Math.pow(1+v.inflation,v.years);
+ return {balance,invested,gains,tax,afterTax,real,result};
+}
+function calculate(){
+ updateLabels();const v=values(),r=simulate();rows=r.result;
+ $('final').textContent=money(r.balance);$('invested').textContent=money(r.invested);$('gains').textContent=money(r.gains);$('taxValue').textContent=money(r.tax);$('afterTax').textContent=money(r.afterTax);$('real').textContent=money(r.real);
+ $('summary').textContent=`At ${$('rate').value}% annual return over ${v.years} years, the projected portfolio is ${money(r.balance)} before modeled tax. You contribute ${money(r.invested)} in total.`;
+ $('projection').querySelector('tbody').innerHTML=rows.map(x=>`<tr><td>${x.year}</td><td>${money(x.opening)}</td><td>${money(x.contrib)}</td><td>${money(x.growth)}</td><td>${money(x.closing)}</td><td>${money(x.real)}</td></tr>`).join('');
+ $('scenarios').querySelector('tbody').innerHTML=[6,8,10,12,14].map(a=>{const s=simulate(a/100);return `<tr><td>${a}%</td><td>${money(s.balance)}</td><td>${money(s.afterTax)}</td><td>${money(s.real)}</td><td>${s.invested?(s.afterTax/s.invested).toFixed(2)+'×':'—'}</td></tr>`}).join('');
+ drawChart();
+}
+function drawChart(){
+ const c=$('chart'),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);if(!rows.length)return;
+ const max=Math.max(1,...rows.map(x=>x.closing)),left=80,right=25,top=25,bottom=45,w=c.width-left-right,h=c.height-top-bottom;
+ ctx.font='13px Arial';ctx.fillStyle='#64748b';ctx.strokeStyle='#dbe2ea';ctx.lineWidth=1;
+ for(let i=0;i<=4;i++){const y=top+h*i/4;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(c.width-right,y);ctx.stroke();ctx.fillText(money(max*(1-i/4)),5,y+4)}
+ ctx.strokeStyle='#2563eb';ctx.lineWidth=3;ctx.beginPath();rows.forEach((x,i)=>{const px=left+w*i/(rows.length-1||1),py=top+h*(1-x.closing/max);i?ctx.lineTo(px,py):ctx.moveTo(px,py)});ctx.stroke();
+ ctx.fillStyle='#64748b';ctx.fillText('Years',c.width/2-15,c.height-12);
+}
+function downloadCSV(){const csv='Year,Opening Value,Contributions,Growth,Closing Value,Real Value\n'+rows.map(x=>[x.year,x.opening,x.contrib,x.growth,x.closing,x.real].join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='investment_projection.csv';a.click();URL.revokeObjectURL(a.href)}
+function resetForm(){ $('initial').value=4500000;$('sip').value=20000;$('step').value=10;$('rate').value=10;$('years').value=30;$('inflation').value=5;$('tax').value=0;calculate(); }
+calculate();
+</script>
+</body>
+</html>
